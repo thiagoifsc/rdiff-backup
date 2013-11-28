@@ -1,7 +1,6 @@
 #!/bin/bash
 # Script de automatização do rdiff-backup
 # Thiago Felipe da Cunha
-# 2012-10-31
 
 # organização
 org=`cat /etc/rdiff-backup/rdiff-backup.conf|grep org=|cut -d\" -f2`
@@ -21,16 +20,8 @@ do
 	host[$c-1]=`cat /etc/rdiff-backup/disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f1`
         diretorios_backup[$c-1]=`cat /etc/rdiff-backup/disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f2`
 	usuario[$c-1]=`cat /etc/rdiff-backup/disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f4`
-#        for (( c2=${#c2[@]}; c2 < 100; c2++ ))
-#        do
-#		exclude=`cat /etc/rdiff-backup/disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f3|cut -d, -f$c2`
-#                if  [ $exclude != " " ]
-#                then
-#                        excluir[$c2]= $exclude
-#                fi
-#        done
-	diretorios_excluir[$c-1]=`cat disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f3` 
-	qtd_excluir[$c-1]=`echo $diretorios_excluir[$c-1] | sed 's/,/ /g' | wc -w`
+	diretorios_excluir[$c-1]=`cat disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f3`
+	qtd_excluir[$c-1]=`echo ${diretorios_excluir[$c-1]} | sed 's/,/ /g' | wc -w`
 done
 
 # verifica dependências
@@ -47,12 +38,10 @@ data=`date "+%d %B %Y"`
 for (( i=0; i < ${#diretorios_backup[@]}; i++ ))
 do
 	# verifica as pastas que devem ser omitidas no backup do diretorio atual
-        for (( c=0; c < $qtd_excluir[$i]; c++ ))
+        for (( c=1; c <= ${qtd_excluir[$i]}; c++ ))
         do
-                exclui=`echo $diretorios_excluir[$i] | cut -d, -f$c`
-		echo $exclui
+                exclui=`echo ${diretorios_excluir[$i]} | cut -d, -f$c`
                 exclude="$exclude --exclude ${diretorios_backup[$i]}/$exclui"
-		echo $exclude
         done
 
         logger "rdiff_backup_home: Supressão dos backups antigos do diretório ${diretorios_backup[$i]} em ${host[$i]} (>$dias dias)"
