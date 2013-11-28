@@ -3,26 +3,25 @@
 # Thiago Felipe da Cunha
 
 local=`echo $0 | awk -F'/' '{for (i=1; i<NF; i++) printf("%s/", $i)}'`
-
 # organização
-org=`cat $local/rdiff-backup.conf|grep org=|cut -d\" -f2`
+org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
 # email para onde serão enviados os relatórios
-mail=`cat $local/rdiff-backup.conf|grep mail=|cut -d\" -f2`
+mail=`cat ${local}rdiff-backup.conf|grep mail=|cut -d\" -f2`
 # dias de manutencao do backup incremental
-dias=`cat $local/rdiff-backup.conf|grep dias=|cut -d\" -f2`
+dias=`cat ${local}rdiff-backup.conf|grep dias=|cut -d\" -f2`
 # habilita/desabilita o log
-log=`cat $local/rdiff-backup.conf|grep log=|cut -d\= -f2`
+log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 # pasta onde o backup deve ser salvo
-destino=`cat $local/rdiff-backup.conf|grep destino=|cut -d\" -f2`
+destino=`cat ${local}rdiff-backup.conf|grep destino=|cut -d\" -f2`
 
-discos=`cat $local/disklist.conf | sed '/^\( *$\| *#\)/d'| wc -l`
+discos=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'| wc -l`
 #c2=0
 for (( c=1; c <= $discos; c++ ))
 do
-	host[$c-1]=`cat $local/disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f1`
-        diretorios_backup[$c-1]=`cat $local/disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f2`
-	usuario[$c-1]=`cat $local/disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f4`
-	diretorios_excluir[$c-1]=`cat disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f3`
+	host[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f1`
+        diretorios_backup[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f2`
+	usuario[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f4`
+	diretorios_excluir[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f3`
 	qtd_excluir[$c-1]=`echo ${diretorios_excluir[$c-1]} | sed 's/,/ /g' | wc -w`
 done
 
