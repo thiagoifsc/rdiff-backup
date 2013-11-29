@@ -18,7 +18,8 @@ discos=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'| wc -l`
 #c2=0
 for (( c=1; c <= $discos; c++ ))
 do
-	host[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f1`
+	disk_host=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f1`
+	host[$c-1]=`ping $disk_host -c1|grep PING|cut -d" " -f3|sed 's/(\|)//g'`
         diretorios_backup[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f2`
 	usuario[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f4`
 	diretorios_excluir[$c-1]=`cat ${local}disklist.conf | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f3`
