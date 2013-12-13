@@ -13,15 +13,15 @@ fi
 logger "rdiff_backup_home: Lendo arquivo de discos para backup: $disklist"
 
 # organização
-org=`cat rdiff-backup.conf|grep org=|cut -d\" -f2`
+org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
 # email para onde serão enviados os relatórios
-mail=`cat rdiff-backup.conf|grep mail=|cut -d\" -f2`
+mail=`cat ${local}rdiff-backup.conf|grep mail=|cut -d\" -f2`
 # dias de manutencao do backup incremental
-dias=`cat rdiff-backup.conf|grep dias=|cut -d\" -f2`
+dias=`cat ${local}rdiff-backup.conf|grep dias=|cut -d\" -f2`
 # habilita/desabilita o log
-log=`cat rdiff-backup.conf|grep log=|cut -d\= -f2`
+log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 # pasta onde o backup deve ser salvo
-destino=`cat rdiff-backup.conf|grep destino=|cut -d\" -f2`
+destino=`cat ${local}rdiff-backup.conf|grep destino=|cut -d\" -f2`
 
 discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
 for (( c=1; c <= $discos; c++ ))
