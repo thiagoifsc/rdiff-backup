@@ -12,12 +12,19 @@ else
 fi
 logger "rdiff_backup_home: Lendo arquivo de discos para backup: $disklist"
 
+# verifica quantidade de dias de manutencao do backup incremental
+if [ $2 ]
+then
+        dias=$2
+else
+        dias=`cat ${local}rdiff-backup.conf|grep dias=|cut -d\" -f2`
+fi
+logger "rdiff_backup_home: Dias para manutencao do backup incremental: $dias"
+
 # organização
 org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
 # email para onde serão enviados os relatórios
 mail=`cat ${local}rdiff-backup.conf|grep mail=|cut -d\" -f2`
-# dias de manutencao do backup incremental
-dias=`cat ${local}rdiff-backup.conf|grep dias=|cut -d\" -f2`
 # habilita/desabilita o log
 log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 # pasta onde o backup deve ser salvo
