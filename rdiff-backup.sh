@@ -23,8 +23,8 @@ logger "rdiff_backup_home: Dias para manutencao do backup incremental: $dias"
 
 # organização
 org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
-# email para onde serão enviados os relatórios
-mail=`cat ${local}rdiff-backup.conf|grep mail=|cut -d\" -f2`
+# emails para onde seram enviados os relatórios
+mail=`cat ${local}rdiff-backup.conf|grep mail=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
 # habilita/desabilita o log
 log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 # pasta onde o backup deve ser salvo
