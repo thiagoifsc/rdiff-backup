@@ -69,8 +69,8 @@ do
 
 	mkdir -p $destino${host[$i]}${diretorios_backup[$i]}
 
-	ips_locais=(`ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
-	qtd_ips=`ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
+	ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
+	qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
 	qtd_ips=$((qtd_ips-1))
 	# verifica se o host de backup é local ou remoto
 	for (( c=0; c < ${#ips_locais[@]}; c++ ))
