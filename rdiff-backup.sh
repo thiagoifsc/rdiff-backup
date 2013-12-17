@@ -1,6 +1,9 @@
 #!/bin/bash
-# Script de automatização do rdiff-backup
+# Script de automatizacao do rdiff-backup
 # Thiago Felipe da Cunha
+
+# data de inicio do backup
+data=`date "+%d %B %Y"`
 
 # verifica o arquivo de configuracao a ser usado
 local=`echo $0 | awk -F'/' '{for (i=1; i<NF; i++) printf("%s/", $i)}'`
@@ -10,7 +13,7 @@ then
 else
 	disklist=${local}"disklist"
 fi
-logger "rdiff_backup_home: Lendo arquivo de discos para backup: $disklist"
+logger "rdiff_backup: Lendo arquivo de discos para backup: $disklist"
 
 # verifica quantidade de dias de manutencao do backup incremental
 if [ $2 ]
@@ -19,7 +22,7 @@ then
 else
         dias=`cat ${local}rdiff-backup.conf|grep dias=|cut -d\" -f2`
 fi
-logger "rdiff_backup_home: Dias para manutencao do backup incremental: $dias"
+logger "rdiff_backup: Dias para manutencao do backup incremental: $dias"
 
 # organização
 org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
@@ -29,6 +32,15 @@ mail=`cat ${local}rdiff-backup.conf|grep mail=|cut -d\" -f2|cut -d\" -f1|sed 's/
 log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 # pasta onde o backup deve ser salvo
 destino=`cat ${local}rdiff-backup.conf|grep destino=|cut -d\" -f2`
+
+# verifica se ha alguma instancia do rdiff-backup rodando
+verifica_instancia=`ps a | grep "rdiff-backup --server" | wc -l`
+if [ $verifica_instancia -gt 1 ]
+then
+        logger "rdiff_backup: Abortando, outra instancia do rdiff_backup rodando"
+        echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\nExiste outra instancia do rdiff-backup rodando.. backup abortado" | mail -s "$org RDIFF-BACKUP ERROR FOR $data" $mail
+        exit 0
+fi
 
 discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
 for (( c=1; c <= $discos; c++ ))
@@ -49,9 +61,6 @@ test -x /usr/bin/mail || exit 0;
 
 logger "rdiff_backup: Inicio do backup."
 
-# data de inicio do backup
-data=`date "+%d %B %Y"`
-
 for (( i=0; i < ${#diretorios_backup[@]}; i++ ))
 do
 	# verifica as pastas que devem ser omitidas no backup do diretorio atual
@@ -61,11 +70,11 @@ do
                 exclude="$exclude --exclude ${diretorios_backup[$i]}/$exclui"
         done
 
-        logger "rdiff_backup_home: Supressão dos backups antigos do diretório ${diretorios_backup[$i]} em ${host[$i]} (>$dias dias)"
+        logger "rdiff_backup: Supressão dos backups antigos do diretório ${diretorios_backup[$i]} em ${host[$i]} (>$dias dias)"
         incrementos= /usr/bin/rdiff-backup --remove-older-than "$dias"D --force $destino${host[$i]}${diretorios_backup[$i]}
-        logger "rdiff_backup_home: Supressão dos backups antigos do diretório ${diretorios_backup[$i]} em ${host[$i]}  completa"
+        logger "rdiff_backup: Supressão dos backups antigos do diretório ${diretorios_backup[$i]} em ${host[$i]}  completa"
 
-        logger "rdiff_backup_home: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} }"
+        logger "rdiff_backup: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} }"
 
 	mkdir -p $destino${host[$i]}${diretorios_backup[$i]}
 
@@ -84,7 +93,7 @@ do
 			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 		fi
 	done
-        logger "rdiff_backup_home: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} completo"
+        logger "rdiff_backup: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} completo"
 
         exclude=""
 done
