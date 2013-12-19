@@ -34,12 +34,14 @@ log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 destino=`cat ${local}rdiff-backup.conf|grep destino=|cut -d\" -f2`
 
 # verifica se ha alguma instancia do rdiff-backup rodando
-verifica_instancia=`ps a | grep "rdiff-backup --server" | wc -l`
-if [ $verifica_instancia -gt 1 ]
+verifica_instancia=`ps a | grep "/bin/bash" | grep "rdiff-backup.sh" | wc -l`
+if [ $verifica_instancia -gt 2 ]
 then
         logger "rdiff_backup: Abortando, outra instancia do rdiff_backup rodando"
         echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\nExiste outra instancia do rdiff-backup rodando.. backup abortado" | mail -s "$org RDIFF-BACKUP ERROR FOR $data" $mail
         exit 0
+else
+	logger "rdiff_backup: Ok, nenhuma outra instancia rodando, \$verifica_instancia=$verifica_instancia"
 fi
 
 discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
