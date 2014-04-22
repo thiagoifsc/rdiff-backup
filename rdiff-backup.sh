@@ -2,6 +2,8 @@
 # Script de automatizacao do rdiff-backup
 # Thiago Felipe da Cunha
 
+
+rdiff_start(){
 # data de inicio do backup
 data=`date "+%d %B %Y"`
 
@@ -27,15 +29,16 @@ logger "rdiff_backup: Dias para manutencao do backup incremental: $dias"
 # organização
 org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
 # emails para onde seram enviados os relatórios
-mail=`cat ${local}rdiff-backup.conf|grep mail=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
+mail=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep mail=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
 # habilita/desabilita o log
 log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 # pasta onde o backup deve ser salvo
 destino=`cat ${local}rdiff-backup.conf|grep destino=|cut -d\" -f2`
 
 # verifica se ha alguma instancia do rdiff-backup rodando
-verifica_instancia=`ps a | grep "/bin/bash" | grep "rdiff-backup.sh" | wc -l`
-if [ $verifica_instancia -gt 2 ]
+verifica_instancia=`ps ax|grep "/usr/bin/python /usr/bin/rdiff-backup"|grep -v "grep"|wc -l`
+echo $verifica_instancia
+if [ $verifica_instancia -gt 0 ]
 then
         logger "rdiff_backup: Abortando, outra instancia do rdiff_backup rodando"
         echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\nExiste outra instancia do rdiff-backup rodando.. backup abortado" | mail -s "$org RDIFF-BACKUP ERROR FOR $data" $mail
@@ -107,4 +110,32 @@ then
 	echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" >> /var/log/rdiff.log
 fi
         logger "rdiff_backup: Fim do backup."
+}
+
+rdiff_stop(){
+  sudo killall -9 rdiff-backup.sh rdiff-backup
+}
+
+rdiff_uso(){
+  # Mensagem de ajuda
+  echo "Sintaxe errada..."
+  echo "./$0 (start|stop|restart)"
+}
+
+
+case $1 in
+  start)
+    rdiff_start $2 $3
+    ;;
+  stop)
+    rdiff_stop
+    ;;
+  restart)
+    rdiff_stop
+    rdiff_start
+    ;;
+  *)
+    rdiff_uso
+    ;;
+esac
 
