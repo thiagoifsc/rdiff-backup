@@ -51,7 +51,8 @@ discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
 for (( c=1; c <= $discos; c++ ))
 do
 	disk_host=`cat $disklist | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f1`
-	host[$c-1]=`ping $disk_host -c1|grep PING|cut -d" " -f3|sed 's/(\|)//g'`
+	host[$c-1]=$disk_host
+	ip_host[$c-1]=`ping $disk_host -c1|grep PING|cut -d" " -f3|sed 's/(\|)//g'`
         diretorios_backup[$c-1]=`cat $disklist | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f2`
 	usuario[$c-1]=`cat $disklist | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f4`
 	diretorios_excluir[$c-1]=`cat $disklist | sed '/^\( *$\| *#\)/d'|sed ''$c'!d' |cut -d: -f3`
@@ -89,7 +90,7 @@ do
 	# verifica se o host de backup é local ou remoto
 	for (( c=0; c < ${#ips_locais[@]}; c++ ))
 	do
-		if [ ${ips_locais[$c]} == ${host[$i]} ]
+		if [ ${ips_locais[$c]} == ${ip_host[$i]} ]
 		then
 			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup --force --print-statistics$exclude ${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 			c=${#ips_locais[@]}
