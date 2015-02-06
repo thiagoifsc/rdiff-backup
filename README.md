@@ -5,13 +5,13 @@ Implementação de backup incremental com Rdiff-backup
 ============
 ##Intalação:
 Pré requisitos:
-rdiff-backup git mailutils(para envio do relatório)
+rdiff-backup git sendemail(para envio do relatório)
 
 ###Em distribuições debian like:
-sudo apt-get install git rdiff-backup mailutils
+sudo apt-get install git rdiff-backup sendemail
 
 ###Arch Linux:
-sudo pacman -S git rdiff-backup mailutils
+sudo pacman -S git rdiff-backup sendemail
 
 ##Download do repositório:
 git clone https://github.com/thiagoifsc/rdiff-backup.git
