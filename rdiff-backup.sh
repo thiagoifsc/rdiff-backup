@@ -28,6 +28,16 @@ logger "rdiff_backup: Dias para manutencao do backup incremental: $dias"
 
 # organização
 org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
+# servidor smtp autenticado
+smtpserver=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep smtpserver=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
+# porta do servidor smtp autenticado
+smtpserver_port=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep smtpserver_port=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
+# usuario de autenticação no servidor smtp
+smtplogin=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep smtplogin=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
+# senha do usuario de autenticação no servidor smtp
+smtppass=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep smtppass=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
+# emails de onde seram enviados os relatórios
+mail_from=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep mail_from=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
 # emails para onde seram enviados os relatórios
 mail=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep mail=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
 # habilita/desabilita o log
@@ -37,7 +47,6 @@ destino=`cat ${local}rdiff-backup.conf|grep destino=|cut -d\" -f2`
 
 # verifica se ha alguma instancia do rdiff-backup rodando
 verifica_instancia=`ps ax|grep "/usr/bin/python /usr/bin/rdiff-backup"|grep -v "grep"|wc -l`
-echo $verifica_instancia
 if [ $verifica_instancia -gt 0 ]
 then
         logger "rdiff_backup: Abortando, outra instancia do rdiff_backup rodando"
@@ -62,8 +71,8 @@ done
 # verifica dependências
 test -x /usr/bin/rdiff-backup || echo -e "rdiff-backup não instalado no servidor. \nTente: sudo apt-get install rdiff-backup"
 test -x /usr/bin/rdiff-backup || exit 0;
-test -x /usr/bin/mail || echo -e "mailutils não instalado no servidor. \nTente: sudo apt-get install mailutils"
-test -x /usr/bin/mail || exit 0;
+test -x /usr/bin/sendEmail || echo -e "sendEmail não instalado no servidor. \nTente: sudo apt-get install sendemail"
+test -x /usr/bin/sendEmail || exit 0;
 
 logger "rdiff_backup: Inicio do backup."
 
@@ -92,11 +101,11 @@ do
 	do
 		if [ ${ips_locais[$c]} == ${ip_host[$i]} ]
 		then
-			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup --force --print-statistics$exclude ${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
+			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v5 --force --print-statistics$exclude ${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 			c=${#ips_locais[@]}
 		elif [ $c -eq $qtd_ips ]
 		then
-			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
+			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v5 --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 		fi
 	done
         logger "rdiff_backup: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} completo"
@@ -104,7 +113,8 @@ do
         exclude=""
 done
 # envia relatório via email
-echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" | mail -s "$org RDIFF-BACKUP REPORT FOR $data" $mail
+#echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" | mail -s "$org RDIFF-BACKUP REPORT FOR $data" $mail
+/usr/bin/sendEmail -f "$mail_from" -t "$mail" -u "$org RDIFF-BACKUP REPORT FOR $data" -m "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" -s "$smtpserver:$smtpserver_port" -xu "$smtplogin" -xp "$smtppass"
 # salva relatório no log
 if [ $log == true ]
 then
@@ -139,4 +149,3 @@ case $1 in
     rdiff_uso
     ;;
 esac
-
