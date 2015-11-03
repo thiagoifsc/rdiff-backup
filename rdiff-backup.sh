@@ -28,6 +28,8 @@ logger "rdiff_backup: Dias para manutencao do backup incremental: $dias"
 
 # organização
 org=`cat ${local}rdiff-backup.conf|grep org=|cut -d\" -f2`
+# habilita tls
+tls=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep tls=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
 # servidor smtp autenticado
 smtpserver=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep smtpserver=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
 # porta do servidor smtp autenticado
@@ -42,8 +44,12 @@ mail_from=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep mail_from=|cut -d\" -
 mail=`cat ${local}rdiff-backup.conf|grep -v '^#'|grep mail=|cut -d\" -f2|cut -d\" -f1|sed 's/ //g'`
 # habilita/desabilita o log
 log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
+# user do destino onde o backup deve ser salvo
+user_destino=`cat ${local}rdiff-backup.conf|grep user_destino=|cut -d\" -f2`
+# host onde o backup deve ser salvo
+host_destino=`cat ${local}rdiff-backup.conf|grep host_destino=|cut -d\" -f2`
 # pasta onde o backup deve ser salvo
-destino=`cat ${local}rdiff-backup.conf|grep destino=|cut -d\" -f2`
+destino=`cat ${local}rdiff-backup.conf|grep pasta_destino=|cut -d\" -f2`
 
 # verifica se ha alguma instancia do rdiff-backup rodando
 verifica_instancia=`ps ax|grep "/usr/bin/python /usr/bin/rdiff-backup"|grep -v "grep"|wc -l`
@@ -54,6 +60,15 @@ then
         exit 0
 else
 	logger "rdiff_backup: Ok, nenhuma outra instancia rodando, \$verifica_instancia=$verifica_instancia"
+fi
+
+# verifica se o host destino local
+if [ -z $host_destino ]
+then
+        logger "rdiff_backup: Destino local"
+else
+	host_destino_formatado="$user_destino@$host_destino::"
+        logger "rdiff_backup: Destino Remoto"
 fi
 
 discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
@@ -86,35 +101,50 @@ do
         done
 
         logger "rdiff_backup: Supressão dos backups antigos do diretório ${diretorios_backup[$i]} em ${host[$i]} (>$dias dias)"
-        incrementos= /usr/bin/rdiff-backup --remove-older-than "$dias"D --force $destino${host[$i]}${diretorios_backup[$i]}
+        incrementos= /usr/bin/rdiff-backup --remove-older-than "$dias"D --force $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]}
         logger "rdiff_backup: Supressão dos backups antigos do diretório ${diretorios_backup[$i]} em ${host[$i]}  completa"
 
         logger "rdiff_backup: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} }"
 
+if [ -z $host_destino ]
+then
 	mkdir -p $destino${host[$i]}${diretorios_backup[$i]}
-
-	ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
-	qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
+else
+	ssh $user_destino@$host_destino '/bin/mkdir -p '$destino${host[$i]}${diretorios_backup[$i]}''
+fi
+	#ubuntu 12.04
+	#ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
+	#qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
+	#ubuntu 14.04
+	ips_locais=(`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1`)
+	qtd_ips=`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1|wc -l`
 	qtd_ips=$((qtd_ips-1))
 	# verifica se o host de backup é local ou remoto
 	for (( c=0; c < ${#ips_locais[@]}; c++ ))
 	do
 		if [ ${ips_locais[$c]} == ${ip_host[$i]} ]
 		then
-			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
+			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${diretorios_backup[$i]} $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 			c=${#ips_locais[@]}
 		elif [ $c -eq $qtd_ips ]
 		then
-			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
+			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 		fi
 	done
         logger "rdiff_backup: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} completo"
 
         exclude=""
 done
+
 # envia relatório via email
+if [ $tls == true ]
+then
+	smtp_opt="-o tls=yes"        
+fi
+
 #echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" | mail -s "$org RDIFF-BACKUP REPORT FOR $data" $mail
-/usr/bin/sendEmail -f "$mail_from" -t "$mail" -u "$org RDIFF-BACKUP REPORT FOR $data" -m "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" -s "$smtpserver:$smtpserver_port" -xu "$smtplogin" -xp "$smtppass"
+/usr/bin/sendEmail -f "$mail_from" -t "$mail" -u "$org RDIFF-BACKUP REPORT FOR $data" -m "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" -s "$smtpserver:$smtpserver_port" -xu "$smtplogin" -xp "$smtppass" $smtp_opt
+
 # salva relatório no log
 if [ $log == true ]
 then
