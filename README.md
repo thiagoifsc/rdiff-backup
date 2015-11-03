@@ -11,7 +11,8 @@ rdiff-backup git sendemail(para envio do relatório)
 sudo apt-get install git rdiff-backup sendemail
 
 ###Arch Linux:
-sudo pacman -S git rdiff-backup sendemail
+sudo pacman -S git rdiff-backup
+sudo yaourt -S sendemail
 
 ##Download do repositório:
 git clone https://github.com/thiagoifsc/rdiff-backup.git
