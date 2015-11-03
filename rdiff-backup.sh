@@ -62,14 +62,29 @@ else
 	logger "rdiff_backup: Ok, nenhuma outra instancia rodando, \$verifica_instancia=$verifica_instancia"
 fi
 
-# verifica se o host destino local
-if [ -z $host_destino ]
-then
-        logger "rdiff_backup: Destino local"
-else
-	host_destino_formatado="$user_destino@$host_destino::"
-        logger "rdiff_backup: Destino Remoto"
-fi
+# verifica ips locais
+#ubuntu 12.04
+#ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
+#qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
+#ubuntu 14.04
+ips_locais=(`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1`)
+qtd_ips=`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1|wc -l`
+qtd_ips=$((qtd_ips-1))
+# verifica se o host destino e local
+# verifica se o host de backup é local ou remoto
+ip_host_destino=`ping $host_destino -c1|grep PING|cut -d" " -f3|sed 's/(\|)//g'`
+for (( c=0; c < ${#ips_locais[@]}; c++ ))
+do
+	if [ ${ips_locais[$c]} == $ip_host_destino ]
+	then
+	        logger "rdiff_backup: Destino local"
+	        host_destino_formatado=""
+	        c=${#ips_locais[@]}
+	else
+		host_destino_formatado="$user_destino@$host_destino::"
+	        logger "rdiff_backup: Destino Remoto"
+	fi
+done
 
 discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
 for (( c=1; c <= $discos; c++ ))
@@ -112,13 +127,7 @@ then
 else
 	ssh $user_destino@$host_destino '/bin/mkdir -p '$destino${host[$i]}${diretorios_backup[$i]}''
 fi
-	#ubuntu 12.04
-	#ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
-	#qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
-	#ubuntu 14.04
-	ips_locais=(`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1`)
-	qtd_ips=`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1|wc -l`
-	qtd_ips=$((qtd_ips-1))
+
 	# verifica se o host de backup é local ou remoto
 	for (( c=0; c < ${#ips_locais[@]}; c++ ))
 	do
