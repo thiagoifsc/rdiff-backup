@@ -64,27 +64,32 @@ fi
 
 # verifica ips locais
 #ubuntu 12.04
-#ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
-#qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
+ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
+qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
 #ubuntu 14.04
-ips_locais=(`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1`)
-qtd_ips=`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1|wc -l`
+#ips_locais=(`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1`)
+#qtd_ips=`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1|wc -l`
 qtd_ips=$((qtd_ips-1))
-# verifica se o host destino e local
-# verifica se o host de backup é local ou remoto
-ip_host_destino=`ping $host_destino -c1|grep PING|cut -d" " -f3|sed 's/(\|)//g'`
-for (( c=0; c < ${#ips_locais[@]}; c++ ))
-do
-	if [ ${ips_locais[$c]} == $ip_host_destino ]
-	then
-	        logger "rdiff_backup: Destino local"
-	        host_destino_formatado=""
-	        c=${#ips_locais[@]}
-	else
-		host_destino_formatado="$user_destino@$host_destino::"
-	        logger "rdiff_backup: Destino Remoto"
-	fi
-done
+# verifica se o host destino local
+if [ -z $host_destino ]
+then
+        logger "rdiff_backup: Destino local"
+else
+	ip_host_destino=`ping $host_destino -c1|grep PING|cut -d" " -f3|sed 's/(\|)//g'`
+	for (( c=0; c < ${#ips_locais[@]}; c++ ))
+	do
+	        if [ ${ips_locais[$c]} == $ip_host_destino ]
+       		then
+	                logger "rdiff_backup: Destino local"
+	                host_destino_formatado=""
+	                c=${#ips_locais[@]}
+			exit 0
+        	else
+	                host_destino_formatado="$user_destino@$host_destino::"
+        	        logger "rdiff_backup: Destino Remoto"
+	        fi
+	done
+fi
 
 discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
 for (( c=1; c <= $discos; c++ ))
