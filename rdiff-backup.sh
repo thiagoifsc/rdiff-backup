@@ -114,8 +114,8 @@ else
 	ssh $user_destino@$host_destino '/bin/mkdir -p '$destino${host[$i]}${diretorios_backup[$i]}''
 fi
 	ips_locais=(`hostname -I`)
-	echo -e ${ips_locais[0]} > /tmp/rdiff.errr
-	echo -e ${ips_locais[1]} >> /tmp/rdiff.errr
+	qtd_ips=${#ips_locais[@]}
+
 	# verifica se o host de backup é local ou remoto
 	for (( c=0; c < ${#ips_locais[@]}; c++ ))
 	do
@@ -123,7 +123,7 @@ fi
 		then
 			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${diretorios_backup[$i]} $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 			c=${#ips_locais[@]}
-		elif [ $c -eq ${#ips_locais[@]}-1 ]
+		elif [ $c -eq $((qtd_ips-1)) ]
 		then
 			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]} 2>/tmp/rdiff-backup_error`"
 		fi
@@ -140,7 +140,7 @@ then
 fi
 
 #echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" | mail -s "$org RDIFF-BACKUP REPORT FOR $data" $mail
-/usr/bin/sendemail -f "$mail_from" -t "$mail" -u "$org RDIFF-BACKUP REPORT FOR $data" -m "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" -s "$smtpserver:$smtpserver_port" -xu "$smtplogin" -xp "$smtppass" $smtp_opt
+/usr/bin/sendemail -f "$mail_from" -t "$mail" -u "$org RDIFF-BACKUP REPORT FOR $data" -m "Lista de discos de backup: $disklist\nHostname: `hostname`\nOrg: $org\nData: $data\n$backup" -s "$smtpserver:$smtpserver_port" -xu "$smtplogin" -xp "$smtppass" $smtp_opt
 
 # salva relatório no log
 if [ $log == true ]
