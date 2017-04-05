@@ -1,7 +1,8 @@
 #!/bin/bash
 # Script de automatizacao do rdiff-backup
 # Thiago Felipe da Cunha
-
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 rdiff_start(){
 # data de inicio do backup
@@ -47,7 +48,7 @@ log=`cat ${local}rdiff-backup.conf|grep log=|cut -d\= -f2`
 # user do destino onde o backup deve ser salvo
 user_destino=`cat ${local}rdiff-backup.conf|grep user_destino=|cut -d\" -f2`
 # host onde o backup deve ser salvo
-host_destino=`cat ${local}rdiff-backup.conf|grep host_destino=|cut -d\" -f2`
+#host_destino=`cat ${local}rdiff-backup.conf|grep host_destino=|cut -d\" -f2`
 # pasta onde o backup deve ser salvo
 destino=`cat ${local}rdiff-backup.conf|grep pasta_destino=|cut -d\" -f2`
 
@@ -62,33 +63,13 @@ else
 	logger "rdiff_backup: Ok, nenhuma outra instancia rodando, \$verifica_instancia=$verifica_instancia"
 fi
 
-# verifica ips locais
-#ubuntu 12.04
-ips_locais=(`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2`)
-qtd_ips=`/sbin/ifconfig|grep "inet end"|cut -d: -f2|cut -d" " -f2|wc -l`
-#ubuntu 14.04
-#ips_locais=(`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1`)
-#qtd_ips=`/sbin/ifconfig|grep "inet addr"|cut -d: -f2|cut -d" " -f1|wc -l`
-qtd_ips=$((qtd_ips-1))
 # verifica se o host destino local
 if [ -z $host_destino ]
 then
         logger "rdiff_backup: Destino local"
 else
-	ip_host_destino=`ping $host_destino -c1|grep PING|cut -d" " -f3|sed 's/(\|)//g'`
-	for (( c=0; c < ${#ips_locais[@]}; c++ ))
-	do
-	        if [ ${ips_locais[$c]} == $ip_host_destino ]
-       		then
-	                logger "rdiff_backup: Destino local"
-	                host_destino_formatado=""
-	                c=${#ips_locais[@]}
-			exit 0
-        	else
-	                host_destino_formatado="$user_destino@$host_destino::"
-        	        logger "rdiff_backup: Destino Remoto"
-	        fi
-	done
+	host_destino_formatado="$user_destino@$host_destino::"
+        logger "rdiff_backup: Destino Remoto"
 fi
 
 discos=`cat $disklist | sed '/^\( *$\| *#\)/d'| wc -l`
@@ -106,8 +87,8 @@ done
 # verifica dependências
 test -x /usr/bin/rdiff-backup || echo -e "rdiff-backup não instalado no servidor. \nTente: sudo apt-get install rdiff-backup"
 test -x /usr/bin/rdiff-backup || exit 0;
-test -x /usr/bin/sendEmail || echo -e "sendEmail não instalado no servidor. \nTente: sudo apt-get install sendemail"
-test -x /usr/bin/sendEmail || exit 0;
+test -x /usr/bin/sendemail || echo -e "sendEmail não instalado no servidor. \nTente: sudo apt-get install sedemail"
+test -x /usr/bin/sendemail || exit 0;
 
 logger "rdiff_backup: Inicio do backup."
 
@@ -132,7 +113,9 @@ then
 else
 	ssh $user_destino@$host_destino '/bin/mkdir -p '$destino${host[$i]}${diretorios_backup[$i]}''
 fi
-
+	ips_locais=(`hostname -I`)
+	echo -e ${ips_locais[0]} > /tmp/rdiff.errr
+	echo -e ${ips_locais[1]} >> /tmp/rdiff.errr
 	# verifica se o host de backup é local ou remoto
 	for (( c=0; c < ${#ips_locais[@]}; c++ ))
 	do
@@ -140,9 +123,9 @@ fi
 		then
 			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${diretorios_backup[$i]} $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
 			c=${#ips_locais[@]}
-		elif [ $c -eq $qtd_ips ]
+		elif [ $c -eq ${#ips_locais[@]}-1 ]
 		then
-			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]} 2>/dev/null`"
+			backup="$backup\n\nHost: ${host[$i]}\nDiretório: ${diretorios_backup[$i]}$incrementos\n`/usr/bin/rdiff-backup -v3 --force --print-statistics$exclude ${usuario[$i]}@${host[$i]}::${diretorios_backup[$i]} $host_destino_formatado$destino${host[$i]}${diretorios_backup[$i]} 2>/tmp/rdiff-backup_error`"
 		fi
 	done
         logger "rdiff_backup: Backup do diretório ${diretorios_backup[$i]} em ${host[$i]} completo"
@@ -157,7 +140,7 @@ then
 fi
 
 #echo -e "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" | mail -s "$org RDIFF-BACKUP REPORT FOR $data" $mail
-/usr/bin/sendEmail -f "$mail_from" -t "$mail" -u "$org RDIFF-BACKUP REPORT FOR $data" -m "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" -s "$smtpserver:$smtpserver_port" -xu "$smtplogin" -xp "$smtppass" $smtp_opt
+/usr/bin/sendemail -f "$mail_from" -t "$mail" -u "$org RDIFF-BACKUP REPORT FOR $data" -m "Hostname: `hostname`\nOrg: $org\nData: $data\n$backup" -s "$smtpserver:$smtpserver_port" -xu "$smtplogin" -xp "$smtppass" $smtp_opt
 
 # salva relatório no log
 if [ $log == true ]
