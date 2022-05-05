@@ -3,7 +3,7 @@ rdiff-backup
 Implementação de backup incremental com Rdiff-backup
 
 ============
-##Intalação:
+##Instalação:
 Pré requisitos:
 rdiff-backup git sendemail(para envio do relatório)
 
