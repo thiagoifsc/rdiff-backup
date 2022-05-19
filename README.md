@@ -2,22 +2,20 @@ rdiff-backup
 ============
 Implementação de backup incremental com Rdiff-backup
 
-============
-##Instalação:
+## Instalação:
 Pré requisitos:
 rdiff-backup git sendemail(para envio do relatório)
 
-###Em distribuições debian like:
+### Em distribuições debian like:
 sudo apt-get install git rdiff-backup sendemail
 
-###Arch Linux:
+### Arch Linux:
 sudo pacman -S git rdiff-backup sendemail
 
-##Download do repositório:
+## Download do repositório:
 git clone https://github.com/thiagoifsc/rdiff-backup.git
 
-============
-##Exemplo de backup via crontab:
+## Exemplo de backup via crontab:
 
 #### backup incremental de segunda a sexta as 20hs com log
 sudo crontab -e
